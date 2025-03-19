@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer, QTime
 import sys
 import random
 
@@ -70,6 +70,7 @@ class GuessTheNumberApp(QWidget):
         self.attempts = 0
         self.low = low
         self.high = high
+        self.start_time = QTime.currentTime()
         self.show_game_screen()
 
     def show_game_screen(self):
@@ -108,6 +109,8 @@ class GuessTheNumberApp(QWidget):
         remaining_attempts = self.chances - self.attempts
 
         if guess == self.target:
+            self.wins += 1
+            self.calculate_time()
             QMessageBox.information(self, "Congratulations!", f"You guessed the number in {self.attempts} attempts!")
             self.show_replay_option()
         elif guess > self.target:
@@ -119,8 +122,16 @@ class GuessTheNumberApp(QWidget):
         self.guess_entry.clear()
 
         if self.attempts >= self.chances:
+            self.losses += 1
+            self.calculate_time()
             QMessageBox.information(self, "Game Over", f"You're out of attempts! The number was {self.target}.")
             self.show_replay_option()
+
+    def calculate_time(self):
+        end_time = QTime.currentTime()
+        elapsed_time = self.start_time.secsTo(end_time)
+        if self.best_times[self.level] is None or elapsed_time < self.best_times[self.level]:
+            self.best_times[self.level] = elapsed_time
 
     def show_replay_option(self):
         self.clear_layout()
@@ -145,7 +156,10 @@ class GuessTheNumberApp(QWidget):
         self.layout.addWidget(quit_btn)
 
     def show_statistics(self):
-        QMessageBox.information(self, "Statistics", "Statistics feature coming soon!")
+        stats = f"Wins: {self.wins}\nLosses: {self.losses}\n"
+        for level, time in self.best_times.items():
+            stats += f"Best Time ({level}): {time if time is not None else 'N/A'} seconds\n"
+        QMessageBox.information(self, "Statistics", stats)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
